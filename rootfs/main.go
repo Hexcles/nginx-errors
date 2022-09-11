@@ -145,7 +145,6 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 			log.Printf("mapping status code %d to %d", code, newCode)
 			code = newCode
 		}
-		w.WriteHeader(code)
 
 		file := fmt.Sprintf("%s/%d%s", path, code, ext)
 		f, err := os.Open(file)
@@ -162,7 +161,9 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 			}
 		}
 		defer f.Close()
+
 		log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
+		w.WriteHeader(code)
 		io.Copy(w, f)
 	}
 }
