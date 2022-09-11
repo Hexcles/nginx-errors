@@ -57,29 +57,28 @@ const (
 	// RequestID is a unique ID that identifies the request - same as for backend service
 	RequestID = "X-Request-ID"
 
-	// ErrFilesPathVar is the name of the environment variable indicating
-	// the location on disk of files served by the handler.
-	ErrFilesPathVar = "ERROR_FILES_PATH"
-
 	// DefaultFormatVar is the name of the environment variable indicating
 	// the default error MIME type that should be returned if either the
 	// client does not specify an Accept header, or the Accept header provided
 	// cannot be mapped to a file extension.
 	DefaultFormatVar = "DEFAULT_RESPONSE_FORMAT"
+
+	// DebugVar is the name of the environment variable indicating the debug mode.
+	// A non-empty value turns on debug logging and response headers.
+	DebugVar = "DEBUG"
 )
 
+const errFilesPath = "/www"
+
 func main() {
-	errFilesPath := "/www"
-	if os.Getenv(ErrFilesPathVar) != "" {
-		errFilesPath = os.Getenv(ErrFilesPathVar)
-	}
+	debugMode := os.Getenv(DebugVar) != ""
 
 	defaultFormat := "text/html"
 	if os.Getenv(DefaultFormatVar) != "" {
 		defaultFormat = os.Getenv(DefaultFormatVar)
 	}
 
-	http.HandleFunc("/", errorHandler(errFilesPath, defaultFormat))
+	http.HandleFunc("/", errorHandler(errFilesPath, defaultFormat, debugMode))
 
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -88,7 +87,7 @@ func main() {
 	http.ListenAndServe(fmt.Sprintf(":8080"), nil)
 }
 
-func errorHandler(path, defaultFormat string) func(http.ResponseWriter, *http.Request) {
+func errorHandler(path, defaultFormat string, debugMode bool) func(http.ResponseWriter, *http.Request) {
 	defaultExts, err := mime.ExtensionsByType(defaultFormat)
 	if err != nil || len(defaultExts) == 0 {
 		panic("couldn't get file extension for default format")
@@ -98,7 +97,7 @@ func errorHandler(path, defaultFormat string) func(http.ResponseWriter, *http.Re
 	return func(w http.ResponseWriter, r *http.Request) {
 		ext := defaultExt
 
-		if os.Getenv("DEBUG") != "" {
+		if debugMode {
 			w.Header().Set(FormatHeader, r.Header.Get(FormatHeader))
 			w.Header().Set(CodeHeader, r.Header.Get(CodeHeader))
 			w.Header().Set(ContentType, r.Header.Get(ContentType))
