@@ -25,10 +25,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -70,11 +66,6 @@ const (
 	DefaultFormatVar = "DEFAULT_RESPONSE_FORMAT"
 )
 
-func init() {
-	prometheus.MustRegister(requestCount)
-	prometheus.MustRegister(requestDuration)
-}
-
 func main() {
 	errFilesPath := "/www"
 	if os.Getenv(ErrFilesPathVar) != "" {
@@ -87,8 +78,6 @@ func main() {
 	}
 
 	http.HandleFunc("/", errorHandler(errFilesPath, defaultFormat))
-
-	http.Handle("/metrics", promhttp.Handler())
 
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -105,7 +94,6 @@ func errorHandler(path, defaultFormat string) func(http.ResponseWriter, *http.Re
 	defaultExt := defaultExts[0]
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
 		ext := defaultExt
 
 		if os.Getenv("DEBUG") != "" {
@@ -172,13 +160,5 @@ func errorHandler(path, defaultFormat string) func(http.ResponseWriter, *http.Re
 		defer f.Close()
 		log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
 		io.Copy(w, f)
-
-		duration := time.Now().Sub(start).Seconds()
-
-		proto := strconv.Itoa(r.ProtoMajor)
-		proto = fmt.Sprintf("%s.%s", proto, strconv.Itoa(r.ProtoMinor))
-
-		requestCount.WithLabelValues(proto).Inc()
-		requestDuration.WithLabelValues(proto).Observe(duration)
 	}
 }
