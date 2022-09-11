@@ -36,9 +36,6 @@ const (
 	// CodeHeader name of the header used as source of the HTTP status code to return
 	CodeHeader = "X-Code"
 
-	// ContentType name of the header that defines the format of the reply
-	ContentType = "Content-Type"
-
 	// OriginalURI name of the header with the original URL from NGINX
 	OriginalURI = "X-Original-URI"
 
@@ -56,6 +53,9 @@ const (
 
 	// RequestID is a unique ID that identifies the request - same as for backend service
 	RequestID = "X-Request-ID"
+
+	// ContentType name of the header that defines the format of the reply
+	ContentType = "Content-Type"
 
 	// DefaultFormatVar is the name of the environment variable indicating
 	// the default error MIME type that should be returned if either the
@@ -104,7 +104,6 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 		if debugMode {
 			w.Header().Set(FormatHeader, r.Header.Get(FormatHeader))
 			w.Header().Set(CodeHeader, r.Header.Get(CodeHeader))
-			w.Header().Set(ContentType, r.Header.Get(ContentType))
 			w.Header().Set(OriginalURI, r.Header.Get(OriginalURI))
 			w.Header().Set(Namespace, r.Header.Get(Namespace))
 			w.Header().Set(IngressName, r.Header.Get(IngressName))
@@ -116,15 +115,21 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 		format := r.Header.Get(FormatHeader)
 		if format == "" {
 			format = defaultFormat
-			log.Printf("format not specified. Using %v", format)
+			if debugMode {
+				log.Printf("format not specified. Using %v", format)
+			}
 		}
 
 		ext := defaultExt
 		if cext, err := mime.ExtensionsByType(format); err != nil {
-			log.Printf("unexpected error reading media type extension: %v. Using %v", err, defaultExt)
+			if debugMode {
+				log.Printf("unexpected error reading media type extension: %v. Using %v", err, defaultExt)
+			}
 			format = defaultFormat
 		} else if len(cext) == 0 {
-			log.Printf("couldn't get media type extension. Using %v", defaultExt)
+			if debugMode {
+				log.Printf("couldn't get media type extension. Using %v", defaultExt)
+			}
 			format = defaultFormat
 		} else {
 			ext = cext[0]
