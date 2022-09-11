@@ -89,7 +89,9 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	http.ListenAndServe(fmt.Sprintf(":8080"), nil)
+	if err := http.ListenAndServe(fmt.Sprintf(":8080"), nil); err != nil {
+		panic(err)
+	}
 }
 
 func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMode bool) func(http.ResponseWriter, *http.Request) {
@@ -163,7 +165,8 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 
 		log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
 		w.WriteHeader(code)
-		io.Copy(w, f)
+		// nothing we can do about the error here
+		_, _ = io.Copy(w, f)
 	}
 }
 
