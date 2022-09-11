@@ -89,7 +89,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	if err := http.ListenAndServe(fmt.Sprintf(":8080"), nil); err != nil {
+	if err := http.ListenAndServe(":8080", nil); err != nil {
 		panic(err)
 	}
 }
