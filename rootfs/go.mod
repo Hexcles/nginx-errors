@@ -1,3 +1,3 @@
-module k8s.io/ingress-nginx/custom-error-pages
+module github.com/Hexcles/nginx-errors
 
 go 1.19

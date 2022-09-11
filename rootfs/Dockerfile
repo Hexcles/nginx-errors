@@ -1,4 +1,5 @@
 # Copyright 2021 The Kubernetes Authors. All rights reserved.
+# Copyright 2022 Robert Ma (https://github.com/Hexcles), Faire Wholesale Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,24 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.19.0-alpine as builder
-RUN apk add git
+FROM golang:1.19-alpine as builder
 
-WORKDIR /go/src/k8s.io/ingress-nginx/images/custom-error-pages
-
+WORKDIR /src/
 COPY . .
 
-RUN go get . && \
-    CGO_ENABLED=0 go build -a -installsuffix cgo \
-	-ldflags "-s -w" \
-	-o nginx-errors .
+RUN CGO_ENABLED=0 go build -o nginx-errors
 
-# Use distroless as minimal base image to package the binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM scratch
 
-COPY --from=builder /go/src/k8s.io/ingress-nginx/images/custom-error-pages/nginx-errors /
-COPY --from=builder /go/src/k8s.io/ingress-nginx/images/custom-error-pages/www /www
-USER nonroot:nonroot
+COPY --from=builder /src/nginx-errors /
+COPY --from=builder /src/etc/mime.types /etc/mime.types
+COPY --from=builder /src/www /www
+
+EXPOSE 8080
 
 CMD ["/nginx-errors"]
