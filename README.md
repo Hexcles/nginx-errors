@@ -1,5 +1,8 @@
 # nginx-errors
 
+![docker-build](https://github.com/Hexcles/nginx-errors/actions/workflows/docker-build.yml/badge.svg)
+![golangci-lint](https://github.com/Hexcles/nginx-errors/actions/workflows/golangci-lint.yml/badge.svg)
+
 This is a minimal and robust [custom error backend][custom-error] for [NGINX
 Ingress Controller][ingress-nginx] based on the official [example][example].
 
