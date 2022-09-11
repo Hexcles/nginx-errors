@@ -47,7 +47,7 @@ certain status codes and `Accept`ed MIME types as requested by the client.
     [`/etc/mime.types`][mime.types] (you can also overlay this file in your
     Docker image if you need a MIME type that is not included).
 
-The image includes default error responses for 400, 4xx, 500 and 5xx in HTML
+The image includes default error responses for 404, 4xx, 500 and 5xx in HTML
 and JSON respectively.
 
 ### `ENV` Configurations
