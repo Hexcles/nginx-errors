@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mime"
 	"net/http"
 	"os"
 	"strconv"
@@ -72,7 +71,7 @@ const (
 	DebugVar = "DEBUG"
 )
 
-const errFilesPath = "/www"
+const errFilesPath = "www"
 
 func main() {
 	debugMode := os.Getenv(DebugVar) != ""
@@ -94,11 +93,10 @@ func main() {
 }
 
 func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMode bool) func(http.ResponseWriter, *http.Request) {
-	defaultExts, err := mime.ExtensionsByType(defaultFormat)
-	if err != nil || len(defaultExts) == 0 {
+	defaultExt, err := ExtensionByType(defaultFormat)
+	if err != nil || defaultExt == "" {
 		panic("couldn't get file extension for default format: " + defaultFormat)
 	}
-	defaultExt := defaultExts[0]
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if debugMode {
@@ -120,19 +118,19 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 			}
 		}
 
-		ext := defaultExt
-		if cext, err := mime.ExtensionsByType(format); err != nil {
+		ext, err := ExtensionByType(format)
+		if err != nil {
 			if debugMode {
 				log.Printf("unexpected error reading media type extension: %v. Using %v", err, defaultExt)
 			}
+			ext = defaultExt
 			format = defaultFormat
-		} else if len(cext) == 0 {
+		} else if ext == "" {
 			if debugMode {
-				log.Printf("couldn't get media type extension. Using %v", defaultExt)
+				log.Printf("couldn't get extension for type %v. Using %v", format, defaultExt)
 			}
+			ext = defaultExt
 			format = defaultFormat
-		} else {
-			ext = cext[0]
 		}
 		w.Header().Set(ContentType, format)
 
@@ -147,13 +145,13 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 			code = newCode
 		}
 
-		file := fmt.Sprintf("%s/%d%s", path, code, ext)
+		file := fmt.Sprintf("%s/%d.%s", path, code, ext)
 		f, err := os.Open(file)
 		if err != nil {
 			if debugMode {
 				log.Printf("falling back due to error opening file: %v", err)
 			}
-			file = fmt.Sprintf("%s/%dxx%s", path, code/100, ext)
+			file = fmt.Sprintf("%s/%dxx.%s", path, code/100, ext)
 			f, err = os.Open(file)
 			if err != nil {
 				log.Printf("returning 404 due to unexpected error opening file: %v", err)
