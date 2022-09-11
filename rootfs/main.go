@@ -1,5 +1,6 @@
 /*
 Copyright 2017 The Kubernetes Authors.
+Copyright 2022 Robert Ma (https://github.com/Hexcles), Faire Wholesale Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// main binary.
 package main
 
 import (
@@ -52,8 +54,8 @@ const (
 	// ServicePort name of the header that contains the matched Service port in the Ingress
 	ServicePort = "X-Service-Port"
 
-	// RequestId is a unique ID that identifies the request - same as for backend service
-	RequestId = "X-Request-ID"
+	// RequestID is a unique ID that identifies the request - same as for backend service
+	RequestID = "X-Request-ID"
 
 	// ErrFilesPathVar is the name of the environment variable indicating
 	// the location on disk of files served by the handler.
@@ -105,7 +107,7 @@ func errorHandler(path, defaultFormat string) func(http.ResponseWriter, *http.Re
 			w.Header().Set(IngressName, r.Header.Get(IngressName))
 			w.Header().Set(ServiceName, r.Header.Get(ServiceName))
 			w.Header().Set(ServicePort, r.Header.Get(ServicePort))
-			w.Header().Set(RequestId, r.Header.Get(RequestId))
+			w.Header().Set(RequestID, r.Header.Get(RequestID))
 		}
 
 		format := r.Header.Get(FormatHeader)
