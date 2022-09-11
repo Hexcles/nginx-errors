@@ -134,10 +134,6 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 		} else {
 			ext = cext[0]
 		}
-		// special case for compatibility
-		if ext == ".htm" {
-			ext = ".html"
-		}
 		w.Header().Set(ContentType, format)
 
 		code, err := strconv.Atoi(r.Header.Get(CodeHeader))
