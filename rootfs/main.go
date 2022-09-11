@@ -101,8 +101,6 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 	defaultExt := defaultExts[0]
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		ext := defaultExt
-
 		if debugMode {
 			w.Header().Set(FormatHeader, r.Header.Get(FormatHeader))
 			w.Header().Set(CodeHeader, r.Header.Get(CodeHeader))
@@ -121,19 +119,23 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 			log.Printf("format not specified. Using %v", format)
 		}
 
-		cext, err := mime.ExtensionsByType(format)
-		if err != nil {
-			log.Printf("unexpected error reading media type extension: %v. Using %v", err, ext)
+		ext := defaultExt
+		if cext, err := mime.ExtensionsByType(format); err != nil {
+			log.Printf("unexpected error reading media type extension: %v. Using %v", err, defaultExt)
 			format = defaultFormat
 		} else if len(cext) == 0 {
-			log.Printf("couldn't get media type extension. Using %v", ext)
+			log.Printf("couldn't get media type extension. Using %v", defaultExt)
+			format = defaultFormat
 		} else {
 			ext = cext[0]
 		}
+		// special case for compatibility
+		if ext == ".htm" {
+			ext = ".html"
+		}
 		w.Header().Set(ContentType, format)
 
-		errCode := r.Header.Get(CodeHeader)
-		code, err := strconv.Atoi(errCode)
+		code, err := strconv.Atoi(r.Header.Get(CodeHeader))
 		if err != nil {
 			// not configurable because it should never happen when called by ingress controller
 			code = 404
@@ -145,29 +147,19 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 		}
 		w.WriteHeader(code)
 
-		if !strings.HasPrefix(ext, ".") {
-			ext = "." + ext
-		}
-		// special case for compatibility
-		if ext == ".htm" {
-			ext = ".html"
-		}
-		file := fmt.Sprintf("%v/%v%v", path, code, ext)
+		file := fmt.Sprintf("%s/%d%s", path, code, ext)
 		f, err := os.Open(file)
 		if err != nil {
-			log.Printf("unexpected error opening file: %v", err)
-			scode := strconv.Itoa(code)
-			file := fmt.Sprintf("%v/%cxx%v", path, scode[0], ext)
-			f, err := os.Open(file)
+			if debugMode {
+				log.Printf("falling back due to error opening file: %v", err)
+			}
+			file = fmt.Sprintf("%s/%dxx%s", path, code/100, ext)
+			f, err = os.Open(file)
 			if err != nil {
-				log.Printf("unexpected error opening file: %v", err)
+				log.Printf("returning 404 due to unexpected error opening file: %v", err)
 				http.NotFound(w, r)
 				return
 			}
-			defer f.Close()
-			log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
-			io.Copy(w, f)
-			return
 		}
 		defer f.Close()
 		log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
