@@ -47,10 +47,16 @@ certain status codes and `Accept`ed MIME types as requested by the client.
     [`/etc/mime.types`][mime.types] (you can also overlay this file in your
     Docker image if you need a MIME type that is not included).
 
+The image includes default error responses for 400, 4xx, 500 and 5xx in HTML
+and JSON respectively.
+
 ### `ENV` Configurations
 
 *   `DEBUG`: turn on debug logging and response headers. (Do *NOT* use in
     production.)
+*   `DEFAULT_RESPONSE_FORMAT`: set the default response format when the
+    there is no requested MIME type or it cannot be recognized. Default to
+    `text/html`.
 *   `STATUS_CODE_MAPPING`: in the format of `SRC_A:DST_A,SRC_B:DST_B,...`
     mapping source status codes (returned by your backend application) to
     destination status codes (seen by the client). Note that you should put the
