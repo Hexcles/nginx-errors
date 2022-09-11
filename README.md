@@ -68,4 +68,4 @@ and JSON respectively.
 [example]: https://github.com/kubernetes/ingress-nginx/tree/main/images/custom-error-pages
 [custom-http-errors]: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#custom-http-errors
 [fhs]: https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard
-[mime.types]: ./rootfs/etc/mime.types
+[mime.types]: ./etc/mime.types
