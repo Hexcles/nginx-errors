@@ -63,6 +63,10 @@ const (
 	// cannot be mapped to a file extension.
 	DefaultFormatVar = "DEFAULT_RESPONSE_FORMAT"
 
+	// StatusCodeMapping is the name of the environment variable specifying a mapping
+	// of status codes, e.g. `494:400,529:503`.
+	StatusCodeMapping = "STATUS_CODE_MAPPING"
+
 	// DebugVar is the name of the environment variable indicating the debug mode.
 	// A non-empty value turns on debug logging and response headers.
 	DebugVar = "DEBUG"
@@ -78,7 +82,9 @@ func main() {
 		defaultFormat = os.Getenv(DefaultFormatVar)
 	}
 
-	http.HandleFunc("/", errorHandler(errFilesPath, defaultFormat, debugMode))
+	statusMapping := parseStatusCodeMapping(os.Getenv(StatusCodeMapping))
+
+	http.HandleFunc("/", errorHandler(errFilesPath, defaultFormat, statusMapping, debugMode))
 
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -87,10 +93,10 @@ func main() {
 	http.ListenAndServe(fmt.Sprintf(":8080"), nil)
 }
 
-func errorHandler(path, defaultFormat string, debugMode bool) func(http.ResponseWriter, *http.Request) {
+func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMode bool) func(http.ResponseWriter, *http.Request) {
 	defaultExts, err := mime.ExtensionsByType(defaultFormat)
 	if err != nil || len(defaultExts) == 0 {
-		panic("couldn't get file extension for default format")
+		panic("couldn't get file extension for default format: " + defaultFormat)
 	}
 	defaultExt := defaultExts[0]
 
@@ -129,8 +135,13 @@ func errorHandler(path, defaultFormat string, debugMode bool) func(http.Response
 		errCode := r.Header.Get(CodeHeader)
 		code, err := strconv.Atoi(errCode)
 		if err != nil {
+			// not configurable because it should never happen when called by ingress controller
 			code = 404
 			log.Printf("unexpected error reading return code: %v. Using %v", err, code)
+		}
+		if newCode, ok := statusMapping[code]; ok {
+			log.Printf("mapping status code %d to %d", code, newCode)
+			code = newCode
 		}
 		w.WriteHeader(code)
 
@@ -162,4 +173,27 @@ func errorHandler(path, defaultFormat string, debugMode bool) func(http.Response
 		log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
 		io.Copy(w, f)
 	}
+}
+
+func parseStatusCodeMapping(config string) map[int]int {
+	if config == "" {
+		return nil
+	}
+	mapping := make(map[int]int)
+	for _, pair := range strings.Split(config, ",") {
+		src, dst, found := strings.Cut(pair, ":")
+		if !found {
+			panic("invalid status mapping: " + config)
+		}
+		srcCode, err := strconv.Atoi(src)
+		if err != nil {
+			panic(err)
+		}
+		dstCode, err := strconv.Atoi(dst)
+		if err != nil {
+			panic(err)
+		}
+		mapping[srcCode] = dstCode
+	}
+	return mapping
 }
