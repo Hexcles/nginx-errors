@@ -27,8 +27,10 @@ COPY 5xx.json /www/5xx.json
 ## Design
 
 The main design goal is minimalism, through which we also achieve robustness
-(the priority is in that order). It uses *only* Go standard libraries,
-effectively a bare `http.ListenAndServe` at its core.
+(the priority is in that order). It uses *only* Go standard libraries, and tries
+to do as much during `init()` as possible, including reading all response files
+into memory. Once it starts, it is effectively a simple `http.ListenAndServe`
+serving bytes from memory.
 
 The binary is statically built with CGO disabled. The Docker image is also
 minimal (built from `scratch`) without a shell or even the usual [FHS][fhs].
