@@ -1,6 +1,6 @@
 # nginx-errors
 
-![docker-build](https://github.com/Hexcles/nginx-errors/actions/workflows/docker-build.yml/badge.svg)
+[![docker-build](https://github.com/Hexcles/nginx-errors/actions/workflows/docker-build.yml/badge.svg)](https://hub.docker.com/r/hexcles/nginx-errors)
 ![golangci-lint](https://github.com/Hexcles/nginx-errors/actions/workflows/golangci-lint.yml/badge.svg)
 
 This is a minimal and robust [custom error backend][custom-error] for [NGINX
