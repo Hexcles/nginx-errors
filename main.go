@@ -19,7 +19,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -71,8 +70,6 @@ const (
 	DebugVar = "DEBUG"
 )
 
-const errFilesPath = "www"
-
 func main() {
 	debugMode := os.Getenv(DebugVar) != ""
 
@@ -83,7 +80,7 @@ func main() {
 
 	statusMapping := parseStatusCodeMapping(os.Getenv(StatusCodeMapping))
 
-	http.HandleFunc("/", errorHandler(errFilesPath, defaultFormat, statusMapping, debugMode))
+	http.HandleFunc("/", errorHandler(defaultFormat, statusMapping, debugMode))
 
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -94,7 +91,7 @@ func main() {
 	}
 }
 
-func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMode bool) func(http.ResponseWriter, *http.Request) {
+func errorHandler(defaultFormat string, statusMapping map[int]int, debugMode bool) func(http.ResponseWriter, *http.Request) {
 	defaultExt, err := ExtensionByType(defaultFormat)
 	if err != nil || defaultExt == "" {
 		panic("couldn't get file extension for default format: " + defaultFormat)
@@ -147,26 +144,16 @@ func errorHandler(path, defaultFormat string, statusMapping map[int]int, debugMo
 			code = newCode
 		}
 
-		file := fmt.Sprintf("%s/%d.%s", path, code, ext)
-		f, err := os.Open(file)
-		if err != nil {
-			if debugMode {
-				log.Printf("falling back due to error opening file: %v", err)
-			}
-			file = fmt.Sprintf("%s/%dxx.%s", path, code/100, ext)
-			f, err = os.Open(file)
-			if err != nil {
-				log.Printf("returning 404 due to unexpected error opening file: %v", err)
-				http.NotFound(w, r)
-				return
-			}
+		response, file := GetResponseReader(code, ext, debugMode)
+		if response == nil {
+			http.NotFound(w, r)
+			return
 		}
-		defer f.Close()
 
 		log.Printf("serving custom error response for code %v and format %v from file %v", code, format, file)
 		w.WriteHeader(code)
 		// nothing we can do about the error here
-		_, _ = io.Copy(w, f)
+		_, _ = io.Copy(w, response)
 	}
 }
 
