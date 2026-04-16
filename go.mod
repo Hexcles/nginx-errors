@@ -1,3 +1,3 @@
 module github.com/Hexcles/nginx-errors
 
-go 1.22
+go 1.26
