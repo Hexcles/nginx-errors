@@ -16,7 +16,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // best-effort close
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
